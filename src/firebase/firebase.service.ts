@@ -20,14 +20,16 @@ export class FirebaseRepository {
    * @param user
    * @returns
    */
-  async createUser(user: { email: string, password: string, displayName: string }) {
+  async createUser(user: { email: string, password: string, displayName: string, role_firebase: string}) {
     try {
       const userRecord = await this.firebaseApp.auth().createUser(user);
       console.log('Successfully created new user:', userRecord.uid);
+      await this.firebaseApp.auth().setCustomUserClaims(userRecord.uid, { role: user.role_firebase });
+
       return userRecord;
     } catch (error) {
       console.log('Error creating new user:', error);
-      throw error;
+      throw new Error('Error creating new user ' + error);
     }
   }
 
@@ -52,11 +54,13 @@ export class FirebaseRepository {
    * @returns
    */
   async verifyToken(token: string) {
-    console.log('Verifying token:', token);
     try {
       const decodedToken = await this.firebaseApp.auth().verifyIdToken(token);
       console.log(decodedToken.uid);
-      return decodedToken.uid;
+      return {
+        uid: decodedToken.uid,
+        role: decodedToken.role || null, // Aquí obtenemos el rol del token
+      };
     } catch (error) {
       console.log('Error verifying token:', error);
       throw error;
